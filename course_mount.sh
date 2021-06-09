@@ -3,6 +3,7 @@
 courses=(
 "ML_courses"
 "linux_courses"
+"sql/sq1"
 )
 
 # function for usage
@@ -17,7 +18,9 @@ usage() {
 #function to check mount exists
 check_mount() {
 	pn="/home/trainee/courses/"
-	pn+=$1
+	course=$1
+        folder=${course#*/}
+	pn+=$folder
 	if [ -d $pn ];then
 		echo 0
 	else
@@ -27,30 +30,28 @@ check_mount() {
 
 #function for mount a course
 mount_course() {
-    # Check if the given course exists in course array
-    # Check if the mount is already exists
-    # Create directory in target
-    # Set permissions
-    # Mount the source to target
-    flag=0
+    
+    # -----------------------------------
+    # this loop checks the course if passed as CLI is present on defined course array or not
+    flag=0 # originally assume course not present
     for i in ${courses[@]}; do
 	if [ "$i" == "$1" ];then
-		flag=1
+		flag=1 # if present flag set to 1
 		break
 	fi
     done
+    #-------------------------------------
+
     isnotmount=$(check_mount $1)
     COURSE_PATH=""
     TARGET_PATH=""
     if [ $flag -eq 1 ] && [ $isnotmount -eq 1 ];then
 	    COURSE_PATH="/home/user1/courses/"$1
-	    TARGET_PATH="/home/trainee/courses/"$1
-	    if [ -d $TARGET_PATH ];then
-	    	 bindfs -p a-w -u trainee -g ftpaccess ${COURSE_PATH} ${TARGET_PATH}
-	    else
-		 mkdir $TARGET_PATH
-		 bindfs -p a-w -u trainee -g ftpaccess ${COURSE_PATH} ${TARGET_PATH}
-	    fi
+	    course=$1
+	    folder=${course#*/} # sincle some courses in form of dir/dir2, ${var#*/} matches /* with shortest occurance and removes it from front(left->right)
+	    TARGET_PATH="/home/trainee/courses/"$folder
+	    mkdir $TARGET_PATH
+	    bindfs -p a-w -u trainee -g ftpaccess ${COURSE_PATH} ${TARGET_PATH}
     fi
 }
 
@@ -69,7 +70,9 @@ unmount_course() {
     # If mount exists unmount and delete directory in target folder
     ismount=$(check_mount "$1")
     if [ $ismount -eq 0 ];then
-    	TARGET_PATH="/home/trainee/courses/"$1
+        course=$1
+        folder=${course#*/}
+        TARGET_PATH="/home/trainee/courses/"$folder
     	umount $TARGET_PATH
 	rmdir $TARGET_PATH
     fi
@@ -91,12 +94,16 @@ elif [ "$1" == "-m" ] && [ "$2" == "-c" ];then
 		mount_course "$3"
 	elif [ "$#" -eq 2 ];then
 		mount_all
+	else
+		echo "do -h to find more"
 	fi
 elif [ "$1" == "-u" ] && [ "$2" == "-c" ];then
 	if [ $# -eq 3 ];then
 		unmount_course "$3"
 	elif [ $# -eq 2 ];then
 		unmount_all	
+	else
+		echo "do -h to find more"
 	fi
 else 
 	echo "do -h to find more"
